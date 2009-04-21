@@ -1,14 +1,13 @@
 CC=gcc
-CFLAGS=-Wall -g
+CFLAGS=-std=c99 -Wall -g
 LDFLAGS=
 BIN=msh
+SOURCES.c= msh.c execute.c parser.c
+OBJECTS= $(SOURCES.c:.c=.o)
 
-# $< the name of the related file that caused the action.
-# $* the prefix shared by target and dependent files. 
-
-msh: msh.o execute.o parser.o
+msh: $(OBJECTS)
 	@echo compiling mdu!
-	$(CC) $(CFLAGS) $? -o $@
+	$(CC) $(CFLAGS) $(OBJECTS) -o $(BIN)
 
 .c.o:
 	@echo .c.o wtf
@@ -16,12 +15,11 @@ msh: msh.o execute.o parser.o
 
 install:
 	@echo Installing msh
-	mv msh ../bin
+	mv $(BIN) ../bin
 
 clean:
 	@echo cleaning mdu!
-	rm msh *.o
-
+	rm $(BIN) $(OBJECTS)
 
 test-run:
 	@echo testrun: -------------------------

@@ -1,5 +1,6 @@
-#include <stdio.h>
 #include "execute.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 /*
  * int prompt(); Den här funktionen ska helt enkelt bara skriva ut
@@ -12,7 +13,12 @@
  * Returns:     0
  */
 int prompt() {
-    printf("msh$ ");
+    char* prompt;
+    if ((prompt = getenv("PROMPT")) != NULL) {
+        printf("%s", prompt);
+    } else {
+        printf("msh%%");
+    }
     return 0;
 }
 
