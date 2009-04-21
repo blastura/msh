@@ -6,12 +6,12 @@ BIN=msh
 # $< the name of the related file that caused the action.
 # $* the prefix shared by target and dependent files. 
 
-msh: msh.o parser.o execute.o
+msh: msh.o execute.o parser.o
 	@echo compiling mdu!
 	$(CC) $(CFLAGS) $? -o $@
 
 .c.o:
-	@echo wtf
+	@echo .c.o wtf
 	$(CC) -c $<
 
 install:
@@ -20,7 +20,7 @@ install:
 
 clean:
 	@echo cleaning mdu!
-	rm msh
+	rm msh *.o
 
 
 test-run:
