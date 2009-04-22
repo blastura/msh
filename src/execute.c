@@ -38,9 +38,28 @@ int prompt() {
  * Returns:     Length of eline, or -1 if an error occured.
  */
 int expand(const char* rawline, char *eline) {
-    return -1;
+    int esize = 0;
+    printf("expand start\n");
+    for (int i = 0; rawline[i]; i++) {
+        if (rawline[i] == '$' && rawline[i + 1] == '(') {
+            i = i + 2; // Step over '('
+            for (; rawline[i] && rawline[i] != ')'; i++, esize++) {
+                //printf("%c", rawline[i]);
+                eline[esize] = rawline[i];
+            }
+            // end eline
+            if (rawline[i] == ')') {
+                eline[esize] = 0;
+            } else {
+                printf("note endeed with )\n");
+                eline[0] = 0;
+                esize = -1;
+            }
+        }
+    }
+    printf("\nexpand end, eline: %s, esize %d\n", eline, esize);
+    return esize;
 }
-
 
 /*
  *  int dupPipe(int pip[2], int end, int destfd); Duplicerar en ände av

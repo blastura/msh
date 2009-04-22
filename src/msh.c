@@ -16,6 +16,8 @@ int main(int argc, char* const argv[]) {
         printf("length %d\n", len);
         parse(line, comLine);
         
+        expand(line, line);
+        
         printf("argv %s\n", *comLine->argv);
         printf("argc %d\n", comLine->argc);
         printf("infile %s\n", comLine->infile);

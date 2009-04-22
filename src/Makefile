@@ -11,7 +11,7 @@ msh: $(OBJECTS)
 
 .c.o:
 	@echo .c.o wtf
-	$(CC) -c $<
+	$(CC) $(CFLAGS) -c $<
 
 install:
 	@echo Installing msh
