@@ -91,13 +91,27 @@ int expand(const char* rawline, char *eline) {
  */
 
 /* Duplicate a pipe to a standard I/O file descriptor, and close both
- * pipe ends Arguments: pip the pipe end tells which end of the pipe
+ * pipe ends.
+ *
+ * Arguments: pip the pipe end tells which end of the pipe
  * shold be dup'ed; it can be one of READ_END or WRITE_END destfd the
  * standard I/O file descriptor to be replaced Returns: -1 on error,
  * else destfd
  */
 int dupPipe(int pip[2], int end, int destfd) {
-    return -1;
+    if (pip[end] == destfd) { // No need to duplicate
+        printf("Don't need to dup, they are the same!\n'");
+        return destfd;
+    }
+    
+    if (dup2(pip[end], destfd) < 0) {
+        perror("Couldn't dup2 pipe");
+        return -1;
+    }
+    
+    close(pip[READ_END]);
+    close(pip[WRITE_END]);
+    return destfd;
 }
 
 
