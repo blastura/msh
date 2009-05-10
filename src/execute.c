@@ -1,6 +1,9 @@
 #include "execute.h"
+#include "parser.h"
 #include <stdio.h>
+#include <unistd.h>
 #include <stdlib.h>
+#include <strings.h>
 
 /*
  * int prompt(); Den här funktionen ska helt enkelt bara skriva ut
@@ -17,7 +20,7 @@ int prompt() {
     if ((prompt = getenv("PROMPT")) != NULL) {
         printf("%s", prompt);
     } else {
-        printf("msh%%");
+        printf("pid: %d, msh%%", getpid());
     }
     return 0;
 }
@@ -39,41 +42,59 @@ int prompt() {
  */
 int expand(const char* rawline, char *eline) {
     int esize = 0;
-    printf("expand start\n");
+    eline[0] = '\0';
+    char tmpEnv[MAXLINELEN];
+    
     for (int i = 0; rawline[i]; i++) {
         if (rawline[i] == '$' && rawline[i + 1] == '(') {
             i = i + 2; // Step over '('
-            for (; rawline[i] && rawline[i] != ')'; i++, esize++) {
-                //printf("%c", rawline[i]);
-                eline[esize] = rawline[i];
+            int envSize = 0;
+            for (; rawline[i] && rawline[i] != ')'; i++, envSize++) {
+                tmpEnv[envSize] = rawline[i];
             }
             // end eline
             if (rawline[i] == ')') {
-                eline[esize] = 0;
+                tmpEnv[envSize] = '\0';
+                //printf("found env %s: %s\n", tmpEnv, getenv(tmpEnv));
+                char * env;
+                if ((env = getenv(tmpEnv)) != NULL ) {
+                    strlcat(eline, env, MAXLINELEN);
+                    esize += strlen(env);
+                }
             } else {
-                printf("note endeed with )\n");
-                eline[0] = 0;
+                fprintf(stderr, "environment reference did not end with )\n");
+                eline[0] = '\0';
                 esize = -1;
+                return esize;
             }
+        } else {
+            eline[esize] = rawline[i];
+            esize++;
         }
     }
-    printf("\nexpand end, eline: %s, esize %d\n", eline, esize);
+    eline[esize] = '\0'; // Finish string
+    printf("\nexpand end, eline: '%s', esize '%d'\n", eline, esize);
     return esize;
+    /*     ptr = filePath + strlen(filePath); /\* point to end of fullpath *\/ */
+    /*     *ptr++ = '/'; */
+    /*     *ptr = 0; */
+    /*     strcpy(ptr, dirp->d_name); */
+    
+    
 }
 
 /*
- *  int dupPipe(int pip[2], int end, int destfd); Duplicerar en ände av
+ * int dupPipe(int pip[2], int end, int destfd); Duplicerar en ände av
  * en pipa till en fildeskriptor, och stänger båda pipändar. Se
- * execute.h för mer information om argument och returvärde för den här
- * funktionen.
+ * execute.h för mer information om argument och returvärde för den
+ * här funktionen.
  */
 
-/* Duplicate a pipe to a standard I/O file descriptor, and close both pipe ends
- * Arguments:  pip   the pipe
- *    end   tells which end of the pipe shold be dup'ed; it can be
- *       one of READ_END or WRITE_END
- *    destfd   the standard I/O file descriptor to be replaced
- * Returns: -1 on error, else destfd
+/* Duplicate a pipe to a standard I/O file descriptor, and close both
+ * pipe ends Arguments: pip the pipe end tells which end of the pipe
+ * shold be dup'ed; it can be one of READ_END or WRITE_END destfd the
+ * standard I/O file descriptor to be replaced Returns: -1 on error,
+ * else destfd
  */
 int dupPipe(int pip[2], int end, int destfd) {
     return -1;
