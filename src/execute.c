@@ -1,7 +1,10 @@
 #include "execute.h"
 #include "parser.h"
 
-#include <fcntl.h>
+#include <fcntl.h> // For S_IRUSR | S_IWUSR
+#include <sys/types.h> // For S_IRUSR | S_IWUSR
+#include <sys/stat.h> // For S_IRUSR | S_IWUSR
+
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
