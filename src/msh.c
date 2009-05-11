@@ -34,7 +34,6 @@ int shell(FILE *restrict stream_in) {
     while (fgets(line, MAXLINELEN, stream_in) != NULL) {
         
         char eline[MAXLINELEN];
-        eline[0] = 0;
         
         printf("line: %s\n", line);
         printf("eline: %s\n", eline);
@@ -75,13 +74,17 @@ int shell(FILE *restrict stream_in) {
             printf("Doing command for i: %d\n", i);
             command cmd = comLine[i];
             
+            /* Close pipes that are open, this will be true for every
+             * command but the first two */
             if (i > 1) {
                 close(prevPipe[READ_END]);
                 close(prevPipe[WRITE_END]);
             }
-            prevPipe[READ_END] = currPipe[READ_END];
-            prevPipe[WRITE_END] = currPipe[WRITE_END];
-                
+            if (i > 0) {
+                prevPipe[READ_END] = currPipe[READ_END];
+                prevPipe[WRITE_END] = currPipe[WRITE_END];
+            }
+            
                 // Create a pipe for command
             if (pipe(currPipe) != 0 ) {
                 printf("couldnt create pipe________________");
@@ -177,7 +180,6 @@ int shell(FILE *restrict stream_in) {
         if (strcmp(line, "exit\n") == 0) {
             exit(0);
         } else {
-            fflush(stdout);
             prompt();
         }
     }

@@ -17,6 +17,7 @@
  */
 int prompt() {
     char* prompt;
+    fflush(stdout);
     if ((prompt = getenv("PROMPT")) != NULL) {
         printf("%s", prompt);
     } else {
@@ -41,46 +42,50 @@ int prompt() {
  * Returns:     Length of eline, or -1 if an error occured.
  */
 int expand(const char* rawline, char *eline) {
+    printf("strlen(eline): %ld\n", strlen(eline));
     int esize = 0;
     eline[0] = '\0';
-    char tmpEnv[MAXLINELEN];
-    
+
     for (int i = 0; rawline[i]; i++) {
         if (rawline[i] == '$' && rawline[i + 1] == '(') {
-            i = i + 2; // Step over '('
-            int envSize = 0;
-            for (; rawline[i] && rawline[i] != ')'; i++, envSize++) {
-                tmpEnv[envSize] = rawline[i];
+            //int tokenStartIndex = i;
+            i = i + 2; // skip '$('
+            
+            char token[MAXLINELEN];
+            int tokenIndex = 0;
+            
+            while (rawline[i] && rawline[i] != ')') {
+                token[tokenIndex++] = rawline[i];
+                printf("found env char: %c\n", rawline[i]);
+                i++;
             }
-            // end eline
+            token[tokenIndex] = '\0'; // End token;
+            
+            // A complete $(text) is found.
             if (rawline[i] == ')') {
-                tmpEnv[envSize] = '\0';
-                //printf("found env %s: %s\n", tmpEnv, getenv(tmpEnv));
+                // printf("found env %s: %s\n", token, getenv(token));
+                // Get env
                 char * env;
-                if ((env = getenv(tmpEnv)) != NULL ) {
-                    strlcat(eline, env, MAXLINELEN);
-                    esize += strlen(env);
+                if ((env = getenv(token)) != NULL ) {
+                    printf("char:\n");
+                    while (*env) {
+                        printf("%c", *env);
+                        eline[esize++] = *env++;
+                    }
+                    printf("\n:char:\n");
+                    // printf("esize: %d, eline: %s\n", esize, eline);
                 }
             } else {
                 fprintf(stderr, "environment reference did not end with )\n");
-                eline[0] = '\0';
-                esize = -1;
-                return esize;
+                return -1;
             }
         } else {
-            eline[esize] = rawline[i];
-            esize++;
+            eline[esize++] = rawline[i];
         }
     }
     eline[esize] = '\0'; // Finish string
     printf("\nexpand end, eline: '%s', esize '%d'\n", eline, esize);
     return esize;
-    /*     ptr = filePath + strlen(filePath); /\* point to end of fullpath *\/ */
-    /*     *ptr++ = '/'; */
-    /*     *ptr = 0; */
-    /*     strcpy(ptr, dirp->d_name); */
-    
-    
 }
 
 /*
