@@ -1,5 +1,7 @@
 #include "execute.h"
 #include "parser.h"
+
+#include <fcntl.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -138,5 +140,32 @@ int dupPipe(int pip[2], int end, int destfd) {
  * Returns: -1 on error, else destfd
  */
 int redirect(char *filename, int flags, int destfd) {
-    return -1;
+    int fd;
+    switch (flags) {
+        case  READ_END:
+            if ((fd = open(filename, O_RDONLY)) < 0) {
+                perror(filename);
+                return -1;
+            }
+            
+            if (dup2(fd, destfd) < 0) {
+                perror("Error trying to dup2():");
+                return -1;
+            }
+            close(fd);
+            break;
+        case WRITE_END:
+            if ((fd = open(filename, O_CREAT | O_EXCL | O_TRUNC | O_WRONLY, S_IRUSR | S_IWUSR)) < 0) {
+                perror(filename);
+                return -1;
+            }
+            
+            if (dup2(fd, destfd) < 0) {
+                perror("Error trying to dup2():");
+                return -1;
+            }
+            close(fd);
+            break;
+    }
+    return destfd;
 }

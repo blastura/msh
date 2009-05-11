@@ -2,7 +2,7 @@ CC=gcc
 CFLAGS=-std=c99 -Wall -g
 LDFLAGS=
 BIN=msh
-SOURCES.c= msh.c execute.c parser.c
+SOURCES.c= msh.c execute.c parser.c sighant.c
 OBJECTS= $(SOURCES.c:.c=.o)
 
 msh: $(OBJECTS)
