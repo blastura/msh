@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-// #include <signal.h> // Should be used for signal handling
+#include <signal.h>
 
 int shell(FILE *restrict stream_in, int scriptMode);
 int doCommands(command comLine[], int nrOfCommands);
