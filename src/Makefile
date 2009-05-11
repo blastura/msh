@@ -15,6 +15,7 @@ msh: $(OBJECTS)
 
 install:
 	@echo Installing msh
+	mkdir -p ../bin
 	mv $(BIN) ../bin
 
 clean:
