@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <strings.h>
+#include <string.h> // For solaris?
 #include <unistd.h>
 #include <sys/wait.h>
 
