@@ -3,6 +3,7 @@
 
 #include <unistd.h>
 #include <stdio.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <strings.h>
 #include <unistd.h>
@@ -74,6 +75,10 @@ int shell(FILE *restrict stream_in) {
             printf("Doing command for i: %d\n", i);
             command cmd = comLine[i];
             
+            if (i > 1) {
+                close(prevPipe[READ_END]);
+                close(prevPipe[WRITE_END]);
+            }
             prevPipe[READ_END] = currPipe[READ_END];
             prevPipe[WRITE_END] = currPipe[WRITE_END];
                 
@@ -95,26 +100,34 @@ int shell(FILE *restrict stream_in) {
                     // Read input from previous command
                     if (i > 0) { // every command but the first
                         fprintf(stderr, "Redir in, i: %d\n", i);
+                        fprintf(stderr, "prevPipe  i, read: %d, %d\n", i, prevPipe[READ_END]);
+                        fprintf(stderr, "prevPipe  i, write: %d, %d\n", i, prevPipe[WRITE_END]);
+                        
                         if (dupPipe(prevPipe, READ_END, STDIN_FILENO) < 0) {
                             _exit(-1);
                         }
                     } else if (i == 0) { // First command
-                        /*                         close(currPipe[READ_END]); */
-                        /*                         close(currPipe[WRITE_END]); */
+                        /* close(currPipe[READ_END]); */
+                        /* close(currPipe[WRITE_END]); */
                     }
 
                     // Write output to next commands
                     if (i + 1 < nrCommands) { // every command but the last
                         fprintf(stderr, "Redir out, i: %d\n", i);
-                        
-                        if (dupPipe(currPipe, WRITE_END, STDOUT_FILENO) < 0) {
+                        fprintf(stderr, "currPipe  i, read: %d, %d\n", i, currPipe[READ_END]);
+                        fprintf(stderr, "currPipe  i, write: %d, %d\n", i, currPipe[WRITE_END]);
+
+                        if (dupPipe(currPipe, WRITE_END, STDOUT_FILENO ) < 0) {
                             _exit(1);
                         }
                     } else if (i + 1 == nrCommands) { // Last command
-                        close(currPipe[READ_END]);
-                        close(currPipe[WRITE_END]);
+                        /* close(currPipe[READ_END]); */
+                        /* close(currPipe[WRITE_END]); */
                     }
-
+                    
+                    // Hur får jag reda på vad som är aktuell stdout efter kopiering
+                    fprintf(stderr, "=========================stdoutnr: %d\n", fileno(stdout));
+                    
                     if (execvp(*cmd.argv++, cmd.argv) < 0 ) {
                         fprintf(stderr,"Kunde inte göra en exec\n");
                         perror("Exec");
@@ -134,21 +147,24 @@ int shell(FILE *restrict stream_in) {
         close(currPipe[READ_END]);
         close(currPipe[WRITE_END]);
         
-        close(prevPipe[READ_END]);
-        close(prevPipe[WRITE_END]);
+        if (nrCommands > 1) {
+            close(prevPipe[READ_END]);
+            close(prevPipe[WRITE_END]);
+        }
         
         for (int i = 0; i < nrCommands; i++) {
-            /* close(pipesArray[i][READ_END]); */
-            /* close(pipesArray[i][WRITE_END]); */
-
             int status;
             printf("i = %d. Waiting for pid: %d, getpid(): %d\n", i, pidArray[i], getpid());
             //wait(&status[i]);
             
             while (waitpid(pidArray[i], &status, 0) < 0) {
-                perror("Error waiting for process:");
-            }
-            
+                if (errno != EINTR) {
+                    perror("Error waiting for process:");
+                    break;
+                } else {
+                    fprintf(stderr, "Looopppp\n");
+                }
+            }            
             printf("Parent wait got status from child: %d, status: %d\n",
                    pidArray[i], status);
             /* printf("WEXITSTATUS: %d\n",WEXITSTATUS(status)); */
