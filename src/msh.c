@@ -62,7 +62,9 @@ int shell(FILE *restrict stream_in) {
         
         /* Will contain one pipe for communication between all
            commands */
-        int pipesArray[nrCommands][2];
+        //int pipesArray[nrCommands][2];
+        int prevPipe[2];
+        int currPipe[2];
         
         /* Will contain pid for every forked process */
         int pidArray[nrCommands];
@@ -71,14 +73,17 @@ int shell(FILE *restrict stream_in) {
         for (int i = 0; i < nrCommands; i++) {
             printf("Doing command for i: %d\n", i);
             command cmd = comLine[i];
-
-            // Create a pipe for command
-            if (pipe(pipesArray[i]) != 0 ) {
+            
+            prevPipe[READ_END] = currPipe[READ_END];
+            prevPipe[WRITE_END] = currPipe[WRITE_END];
+                
+                // Create a pipe for command
+            if (pipe(currPipe) != 0 ) {
                 printf("couldnt create pipe________________");
                 perror("Failed to create pipe: ");
                 exit(-1);
             }
-            
+
             // Create new process
             switch (pidArray[i] = fork()) {
                 case -1: // Fork failed
@@ -86,26 +91,30 @@ int shell(FILE *restrict stream_in) {
                     break;
                 case 0: // Child
                     printf("barn: %s\n", cmd.argv[0]);
-                    //sleep(1);
+
                     // Read input from previous command
                     if (i > 0) { // every command but the first
-                        fprintf(stdout, "Redir in, i: %d\n", i);
-                        if (dupPipe(pipesArray[i - 1], READ_END, STDIN_FILENO) < 0) {
+                        fprintf(stderr, "Redir in, i: %d\n", i);
+                        if (dupPipe(prevPipe, READ_END, STDIN_FILENO) < 0) {
                             _exit(-1);
                         }
+                    } else if (i == 0) { // First command
+                        /*                         close(currPipe[READ_END]); */
+                        /*                         close(currPipe[WRITE_END]); */
                     }
 
                     // Write output to next commands
-                    if (i + 1 < nrCommands) { // any command but the last
+                    if (i + 1 < nrCommands) { // every command but the last
                         fprintf(stderr, "Redir out, i: %d\n", i);
                         
-                        if (dupPipe(pipesArray[i], WRITE_END, STDOUT_FILENO) < 0) {
+                        if (dupPipe(currPipe, WRITE_END, STDOUT_FILENO) < 0) {
                             _exit(1);
                         }
                     } else if (i + 1 == nrCommands) { // Last command
-                        
+                        close(currPipe[READ_END]);
+                        close(currPipe[WRITE_END]);
                     }
-                    
+
                     if (execvp(*cmd.argv++, cmd.argv) < 0 ) {
                         fprintf(stderr,"Kunde inte göra en exec\n");
                         perror("Exec");
@@ -121,10 +130,12 @@ int shell(FILE *restrict stream_in) {
             }
         }
         
-        for (int i = 0; i < nrCommands; i++) {
-            close(pipesArray[i][READ_END]);
-            close(pipesArray[i][WRITE_END]);
-        }
+        // Close pipes
+        close(currPipe[READ_END]);
+        close(currPipe[WRITE_END]);
+        
+        close(prevPipe[READ_END]);
+        close(prevPipe[WRITE_END]);
         
         for (int i = 0; i < nrCommands; i++) {
             /* close(pipesArray[i][READ_END]); */
