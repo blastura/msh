@@ -10,7 +10,7 @@ compile:
 	@echo compiling!
 	cd src && make
 
-install: compile
+install:
 	cd src && make install
 
 clean:
