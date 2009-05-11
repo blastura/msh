@@ -97,10 +97,13 @@ int shell(FILE *restrict stream_in) {
 
                     // Write output to next commands
                     if (i + 1 < nrCommands) { // any command but the last
-                        fprintf(stdout, "Redir out, i: %d\n", i);
+                        fprintf(stderr, "Redir out, i: %d\n", i);
+                        
                         if (dupPipe(pipesArray[i], WRITE_END, STDOUT_FILENO) < 0) {
                             _exit(1);
                         }
+                    } else if (i + 1 == nrCommands) { // Last command
+                        
                     }
                     
                     if (execvp(*cmd.argv++, cmd.argv) < 0 ) {
@@ -130,7 +133,11 @@ int shell(FILE *restrict stream_in) {
             int status;
             printf("i = %d. Waiting for pid: %d, getpid(): %d\n", i, pidArray[i], getpid());
             //wait(&status[i]);
-            waitpid(pidArray[i], &status, 0);//WNOHANG
+            
+            while (waitpid(pidArray[i], &status, 0) < 0) {
+                perror("Error waiting for process:");
+            }
+            
             printf("Parent wait got status from child: %d, status: %d\n",
                    pidArray[i], status);
             /* printf("WEXITSTATUS: %d\n",WEXITSTATUS(status)); */

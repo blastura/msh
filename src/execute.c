@@ -100,7 +100,7 @@ int expand(const char* rawline, char *eline) {
  */
 int dupPipe(int pip[2], int end, int destfd) {
     if (pip[end] == destfd) { // No need to duplicate
-        printf("Don't need to dup, they are the same!\n'");
+        fprintf(stderr, "Don't need to dup, they are the same!\n'");
         return destfd;
     }
     
