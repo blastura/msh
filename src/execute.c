@@ -23,7 +23,7 @@ int prompt() {
     if ((prompt = getenv("PROMPT")) != NULL) {
         printf("%s", prompt);
     } else {
-        printf("pid: %d, msh%%", getpid());
+        printf("msh%% ");
     }
     return 0;
 }
@@ -42,9 +42,9 @@ int prompt() {
  * Arguments:   rawline The line that has been read.
  *              eline   The line after special characters have been expanded.
  * Returns:     Length of eline, or -1 if an error occured.
+ * TODO: check for buffer overflow
  */
 int expand(const char* rawline, char *eline) {
-    printf("strlen(eline): %ld\n", strlen(eline));
     int esize = 0;
     eline[0] = '\0';
 
@@ -52,30 +52,24 @@ int expand(const char* rawline, char *eline) {
         if (rawline[i] == '$' && rawline[i + 1] == '(') {
             //int tokenStartIndex = i;
             i = i + 2; // skip '$('
-            
+
             char token[MAXLINELEN];
             int tokenIndex = 0;
-            
+
             while (rawline[i] && rawline[i] != ')') {
                 token[tokenIndex++] = rawline[i];
-                printf("found env char: %c\n", rawline[i]);
                 i++;
             }
-            token[tokenIndex] = '\0'; // End token;
-            
-            // A complete $(text) is found.
+            token[tokenIndex] = '\0'; // End token string;
+
+            /* A complete $(text) is found */
             if (rawline[i] == ')') {
-                // printf("found env %s: %s\n", token, getenv(token));
-                // Get env
+                /* Get environment value for token and put on eline */
                 char * env;
                 if ((env = getenv(token)) != NULL ) {
-                    printf("char:\n");
                     while (*env) {
-                        printf("%c", *env);
                         eline[esize++] = *env++;
                     }
-                    printf("\n:char:\n");
-                    // printf("esize: %d, eline: %s\n", esize, eline);
                 }
             } else {
                 fprintf(stderr, "environment reference did not end with )\n");
@@ -85,8 +79,7 @@ int expand(const char* rawline, char *eline) {
             eline[esize++] = rawline[i];
         }
     }
-    eline[esize] = '\0'; // Finish string
-    printf("\nexpand end, eline: '%s', esize '%d'\n", eline, esize);
+    eline[esize] = '\0'; // End string
     return esize;
 }
 
@@ -110,12 +103,12 @@ int dupPipe(int pip[2], int end, int destfd) {
         fprintf(stderr, "Don't need to dup, they are the same!\n'");
         return destfd;
     }
-    
+
     if (dup2(pip[end], destfd) < 0) {
         perror("Couldn't dup2 pipe");
         return -1;
     }
-    
+
     close(pip[READ_END]);
     close(pip[WRITE_END]);
     return destfd;
@@ -147,7 +140,7 @@ int redirect(char *filename, int flags, int destfd) {
                 perror(filename);
                 return -1;
             }
-            
+
             if (dup2(fd, destfd) < 0) {
                 perror("Error trying to dup2():");
                 return -1;
@@ -159,7 +152,7 @@ int redirect(char *filename, int flags, int destfd) {
                 perror(filename);
                 return -1;
             }
-            
+
             if (dup2(fd, destfd) < 0) {
                 perror("Error trying to dup2():");
                 return -1;
