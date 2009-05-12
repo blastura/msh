@@ -24,7 +24,7 @@
 
 \def\namn{Anton Johansson}
 \def\mail{dit06ajn@cs.umu.se}
-\def\pathtocode{$\sim$dit06ajn/edu/sysprog/lab1}
+\def\pathtocode{$\sim$dit06ajn/edu/5DV004/lab2}
 
 \def\handledareEtt{Johan Eliasson, johane@cs.umu.se}
 \def\handledareTva{Johan Granberg, johang@cs.umu.se}
@@ -104,45 +104,213 @@ Källkoden till programmet finns i katalogen
 kommandopromt från denna katalog köra följande kommandon:
 
 \begin{verbatim}
-
-
+salt:dit06ajn:~/edu/5DV004/lab2$ make
+salt:dit06ajn:~/edu/5DV004/lab2$ make install
 \end{verbatim}
 
-Detta i sin tur kommer att kompilera filerna \verb!mdu.c! och
+Detta i sin tur kommer att kompilera de nödvändiga filerna i katalogen
+\verb!src! och placera en körbar fil \verb!msh! i katalogen \verb!bin!. och
 \verb!pathalloc.c! från katalogen \verb!src! och skapa en körbar fil,
-\verb!mdu! i underkatalogen \verb!bin!. Kommandot som anropas från
-\verb!make! är:
+\verb!msh! i underkatalogen \verb!bin!. Programmet körs från katalogen
+\verb!bin! enligt syntax:
 
-\verb!gcc -Wall -g -o ./bin/mdu ./src/mdu.c ./src/pathalloc.c!
+\verb!./msh [scriptfiles...]!
 
-Programmet körs med enligt syntax:
-
-\verb!mdu [-s|-a] [dir ...]!
-
-Flaggan \verb!-s! gör så att enbart storleken på angivna kataloger
-skrivs ut, inte alla underkataloger. Flaggan \verb!-a!  skriver ut
-storleken på alla filer, inte enbart kataloger. Exempelkörning:
-
+Ovan kommando utan parameter för skriptfil kommer att skriva ut en
+prompt \textit{msh\%} för användaren. Efter denna prompt kan
+användaren skriva nya kommando som i de flesta andra skalprogram.
+Exempel:
 \begin{verbatim}
-$ bin/mdu -s .. ~dit06ajn/edu
-292     ..
-276120  /home/dit06/dit06ajn/edu
-$
+msh% ls ..
+bin  Makefile  report  src
 \end{verbatim}
-
-Ovan kommando skriver ut den allokerade storleken av de två angivna
-katalogerna \verb!..! och \verb!~dit06ajn/edu! i kilobyte.
 
 % \bibliographystyle{alpha}
 % \bibliography{books.bib}
 
+\section{Systembeskrivning}\label{sec:systembeskrivning}
+Skalprogrammet startas upp genom \textit{main}-funktionen i filen
+\textit{msh.c}. Denna metod läser av om det finns några parametrar som
+ska köras i skalet. Finns sådana parametrar läses dessa in och skickas
+som en ström till metoden \textit{shell}, finns inget skript i
+parametrarna skickas strömmen \textit{stdin} med. Metoden
+\textit{shell} ta även emot en andra parameter som avgör om skalet ska
+köras i skriptläge eller i ett interaktivt läge. Skillnaden
+mellan dessa lägen är att i skriptläget skrivs inga promptar ut.
+
+Metoden \textit{shell} har en loop som läser av indata i form av hela
+rader från den medskickade strömmen. När en hel rad har skickats in
+kommer denna rad att gås igenom av metoden \textit{expand} som byter
+ut varje förekomst av ''\$(XXX)'' med mostsvarande miljövariabel för
+''XXX''. Exempelvis kommer raden 'echo \$(HOST)' kommer att bli 'echo
+salt' om man är inloggad på maskinen salt.cs.umu.se.
+
+När alla miljövariabler bytts ut kommer resultatet att avkodas med
+hjälp av den givna metoden \textit{parse}. Metoden \textit{parse} ser
+till att raden avkodas så att rader som \verb!ls | sort > srt.txt!
+kodas som två kommandon \textit{ls} och \textit{sort} och att utdata
+från kommandot \textit{sort} ska hamna i en nyskapad fil som heter
+\textit{srt.txt}. Strukturen för ett kommando \textit{command} finns
+att se i filen \textit{parser.h}.
+
+När information om de olika kommandona finns avkodade är skalet redo
+att exekvera de givna metoderna, detta görs av metoden
+\textit{doCommands(command comLine[], int nrOfCommands)}. Se mer
+information om denna metod i algoritmbeskrivningen, avsnitt
+\ref{sec:doCommand}. Efter att kommandona är utförda kommer
+skalprogrammet att vänta på att nästa rad finns tillgängligt för
+läsning, det vill säga vid radbrytningar i strömmen som avläses.
+
 \section{Algoritmbeskrivning}\label{sec:algoritmbeskrivning}
+Följande avsnitt ger en beskrivning av hur olika dela i systemet
+fungerar.
+
+\subsection{doCommand}\label{sec:doCommand}
+Metoden \textit{doCommand} tar hand om exekveringen av kommandon som
+skalet läser in. En kombination av kommandon kan till exempel vara
+exekvering av \verb!ls | sort | wc!, här ska \textit{ls} köras och dess
+utdata ska kopplas till indatan för \textit{sort} som i sin tur
+kopplar sin utdata till indata för \textit{wc}. Hantering
+vidaresändning av standard indata och standard utdata görs med hjälp
+av så kallade pipor som skapas med UNIX-metoden \textit{pipe}.
+
+För varje kommando som ska exekveras skapas en ny pipa och en ny
+process skapas genom systemanropet \textit{fork}. Om kommandot är det
+första i en kedja så kopplas utdata från kommandot till pipan.
+Nästkommande kommando kopplar sin indata till samma pipa och om fler
+kommandon följer kopplas utdata till en ny pipa. Det sista kommandot i
+en sådan här kedja kopplar inte om sin utdata vilket resulterar att
+sista kommandot kommer att skriva till standard utdata-ström.
+
+Koppling av standard utdata och indata gör med hjälp av funktionen
+\textit{dupPipe}, implementerad i filen \textit{execute.c}, som i sin
+tur anropar systemanropet \textit{dup2}. För att omdirigera standard
+utdata och indata till och från filer används kommandot
+\textit{redirect}, implementerat samma fil som \textit{dupPipe}.
+Metoden \textit{redirect} öppnar aktuell fil och kopierar den till
+standard utdata-strömmen eller indata-strömmen med hjälp av
+systemanropet \textit{dup2}.
+
+Efter att barnen skapats ställer sig föräldraprocessen och väntar på
+de processID:n som barnen har fått. När alla barn har avslutats eller
+en signal \textit{SIGINT} fångats avslutas föräldraprocessen och
+\textit{doCommand} avslutas.
 
 \section{Testkörningar}\label{sec:testkorningar}
+Följande avsnitt demonstrerar ett antal kommandon som är möjliga att
+köra från skalprogrammet, samt resulterande utdata. All exekvering med
+prompten \textit{msh\%} sker från skalprogrammet.
+
+\subsection{Enkla kommandon}\label{sec:enkla-kommandon}
+Följande kommandon demonstrerar simpla kommandon och dess utdata:
+
+\begin{scriptsize}
+\begin{verbatim}
+msh% ls -la
+total 0
+drwxr-xr-x   2 anton  staff   68 12 Maj 01:32 .
+drwxr-xr-x  10 anton  staff  340 12 Maj 01:29 ..
+\end{verbatim}
+\end{scriptsize}
+
+\begin{scriptsize}
+\begin{verbatim}
+msh% mkdir mapp1
+msh% ls
+mapp1
+\end{verbatim}
+\end{scriptsize}
+
+\subsection{Pipor}\label{sec:pipor}
+Följande kommandon demonstrerar användandet av pipor mellan kommandon:
+\begin{scriptsize}
+\begin{verbatim}
+msh% ls
+mapp1
+msh% touch a            
+msh% touch b
+msh% ls
+a     b     mapp1
+msh% ls | sort
+a
+b
+mapp1
+msh% ls | sort | wc -l
+       3
+\end{verbatim}
+\end{scriptsize}
+
+\subsection{Omdirigering}\label{sec:omdirigering}
+För att omdirigera utdata till en fil:
+\begin{scriptsize}
+\begin{verbatim}
+msh% ls > lsFil.txt
+msh% cat lsFil.txt
+a
+b
+lsFil.txt
+mapp1
+\end{verbatim}
+\end{scriptsize}
+
+För att omdirigera data från en fil till indata för ett kommando:
+\begin{scriptsize}
+\begin{verbatim}
+msh% sort -r < lsFil.txt
+mapp1
+lsFil.txt
+b
+a
+\end{verbatim}
+\end{scriptsize}
+
+Som förra exemplet fast utdata dirigeras in i en fil:
+\begin{scriptsize}
+\begin{verbatim}
+msh% sort -r < lsFil.txt > revSortedLsFil.txt
+msh% cat revSortedLsFil.txt
+mapp1
+lsFil.txt
+b
+a
+\end{verbatim}
+\end{scriptsize}
+
+\subsection{Signalhantering}\label{sec:signalhantering}
+Följande exempel visar ett kommando som hänger sig och som avbryts
+genom att signalen \textit{SIGINT} skickas genom att användaren
+trycker Ctrl-C.
+\begin{scriptsize}
+\begin{verbatim}
+msh% sort
+^Cmsh% 
+\end{verbatim}
+\end{scriptsize}
 
 \section{Lösningen begränsningar}\label{sec:losningensbegransningar}
+Implementationen så som det är nu är inte väldigt användbar för annat
+än ett enkelt exempel på hur ett skal i all simpelhet skulle kunna
+implementeras. Det finns en rad småbuggar som skulle behöva ordnas,
+till exempel avslutas programmet om användaren trycker ENTER utan att
+först skrivit in någonting. Vid testkörningar på en Solaris-maskin
+upptäcktes även att vissa funktioner och konstanter inte fanns i samma
+inkluderade .h filer som för på Mac OSX, de filer som skiljer är
+nu inkluderade på alla system vilket kanske inte är helt optimalt.
+
+Noterat är även att implementationen inte fungerar helt felfritt på en
+Sun Solaris maskin. Det verkar som att parametrar till kommandon inte
+skickas med på rätt sätt.
 
 \section{Problem och reflektioner}\label{sec:problemochreflektioner}
+Det var väldigt svårt att få överblick över hur pipor tillsamman med
+systemanropet \textit{fork} fungerade och vad som krävdes för att en
+barnprocess verkligen skulle avslutas. Det tog väldigt lång tid att
+felsöka fram att en fildeskriptor som glömt stängas vilket gjorde att
+skalet inte kunde hantera fler än en pipa. På grund av oerfarenhet i
+felsökning av C-program har även tiden inte räckt till för att
+implementera alla krav enligt lobarationsspecifikationen. Dock känns
+det som att resterande funktionalitet inte är den svåra biten av
+laborationen, men man vet ju aldrig innan man försökt...
 
 \newpage
 \appendix
@@ -154,8 +322,39 @@ Härefter följer utskrifter från källkoden och andra filer som hör till
 denna laboration.
 
 \newpage
-\subsection{mdu.c}\label{mdu.c}
+\subsection{Makefile}\label{Makefile}
+\begin{scriptsize}
+  \verbatiminput{../src/Makefile}
+\end{scriptsize}
+
+\subsection{execute.c}\label{execute.c}
+\begin{scriptsize}
+  \verbatiminput{../src/execute.c}
+\end{scriptsize}
+
+\subsection{execute.h}\label{execute.h}
+\begin{scriptsize}
+  \verbatiminput{../src/execute.h}
+\end{scriptsize}
+
+\subsection{msh.c}\label{msh.c}
 \begin{scriptsize}
   \verbatiminput{../src/msh.c}
 \end{scriptsize}
+
+\subsection{parser.h}\label{parser.h}
+\begin{scriptsize}
+  \verbatiminput{../src/parser.h}
+\end{scriptsize}
+
+\subsection{sighant.c}\label{sighant.c}
+\begin{scriptsize}
+  \verbatiminput{../src/sighant.c}
+\end{scriptsize}
+
+\subsection{sighant.h}\label{sighant.h}
+\begin{scriptsize}
+  \verbatiminput{../src/sighant.h}
+\end{scriptsize}
+
 \end{document}

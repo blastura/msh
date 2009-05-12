@@ -40,19 +40,20 @@ int shell(FILE *restrict stream_in, int scriptMode) {
     }
 
     while (fgets(line, MAXLINELEN, stream_in) != NULL) {
-        
-        /* Custom commands *****/
-        if (strcmp(line, "exit\n") == 0) {
-            exit(0);
-        } else if (strcmp(line, "cd\n") == 0) {
-            // change dir
-        } else if (strcmp(line, "set\n") == 0) {
-            // set var
-        }
-        
+
         char eline[MAXLINELEN];
         expand(line, eline);
         int nrCommands = parse(eline, comLine);
+        
+        /* Custom commands *****/
+        if (strcmp(*comLine->argv, "exit") == 0) {
+            exit(0);
+        }else if (strcmp(*comLine->argv, "cd") == 0) {
+            // TODO: change dir
+        } else if (strcmp(*comLine->argv, "set") == 0) {
+            // TODO: set var=value
+        }
+        
         doCommands(comLine, nrCommands);
         if (!scriptMode) {
             prompt();
