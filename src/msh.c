@@ -6,12 +6,12 @@
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
+
 #include <strings.h>
-#include <string.h> // For solaris?
+#include <string.h> // For Solaris?
+
 #include <unistd.h>
 #include <sys/wait.h>
-
-#include <signal.h>
 
 int shell(FILE *restrict stream_in, int scriptMode);
 int doCommands(command comLine[], int nrOfCommands);
@@ -40,7 +40,11 @@ int shell(FILE *restrict stream_in, int scriptMode) {
     }
 
     while (fgets(line, MAXLINELEN, stream_in) != NULL) {
-
+        if (line[0] == '\n') {
+            prompt();
+            continue;
+        }
+        
         char eline[MAXLINELEN];
         expand(line, eline);
         int nrCommands = parse(eline, comLine);
