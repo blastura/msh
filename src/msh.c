@@ -138,8 +138,8 @@ int doCommands(command comLine[], int nrOfCommands) {
                 }
                     
                 /* Execute command */
-                if (execvp(*cmd.argv++, cmd.argv) < 0 ) {
-                    perror(*(cmd.argv - 1));
+                if (execvp(cmd.argv[0], cmd.argv) < 0 ) {
+                    perror(cmd.argv[0]);
                     _exit(1); // Don't flush parents files
                 }
                 _exit(0); // Shouldn't get here
