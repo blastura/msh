@@ -52,8 +52,14 @@ int shell(FILE *restrict stream_in, int scriptMode) {
         /* Custom commands *****/
         if (strcmp(*comLine->argv, "exit") == 0) {
             exit(0);
-        }else if (strcmp(*comLine->argv, "cd") == 0) {
+        } else if (strcmp(*comLine->argv, "cd") == 0) {
             // TODO: change dir
+            //printf("cd: %s\n", *++comLine->argv);
+            if (chdir(*++comLine->argv) < 0) {
+                perror(*comLine->argv);
+            }
+            prompt();
+            continue;
         } else if (strcmp(*comLine->argv, "set") == 0) {
             // TODO: set var=value
         }
