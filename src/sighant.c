@@ -10,7 +10,6 @@ void signal_handler(int signum) {
     
     if (signum == SIGINT) {
         for (int i = 0; i < nrCommands; i++) {
-            printf("child pid: %d\n", pidArray[i]);
             kill(pidArray[i], SIGINT);
         }
     }
