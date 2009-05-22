@@ -1,3 +1,11 @@
+% TODO: Vad händer om signaler körs väldigt länge och någon råkar ta
+% över ett pid, då kommer pidArray fortfarande ha kvar ett pidNummer
+% och man kan komma att avsluta fel process.
+
+% TODO: Måste skriva om varför interna kommandon måste vara interna,
+% det är för att pwd och variabler inte kan ändras utanför den egna
+% processen.
+
 \documentclass[a4paper, 12pt]{article}
 \usepackage[swedish]{babel}
 \usepackage[utf8]{inputenc}
