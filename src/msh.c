@@ -1,12 +1,10 @@
 /*
  * Name: Anton Johansson
  * Mail: dit06ajn@cs.umu.se
- * Time-stamp: "2009-05-22 22:35:50 anton"
+ * Time-stamp: "2009-05-22 23:20:37 anton"
  */
 
-#include "execute.h"
-#include "parser.h"
-#include "sighant.h"
+#include "msh.h"
 
 #include <errno.h>
 #include <stdio.h>
@@ -17,12 +15,16 @@
 #include <unistd.h>
 #include <unistd.h>
 
-#define OVERWRITE_ENVS 1
-
 int shell(FILE *restrict stream_in, int scriptMode);
 int doCommands(command comLine[], int nrOfCommands);
 
 int main(int argc, char* const argv[]) {
+    /* Add signal handler */
+    if (signal(SIGINT, signal_handler) == SIG_ERR) {
+        perror("Couldn't register signal handler");
+        exit(1);
+    }
+    
     /* Loading init file */
     FILE *scriptfd;
     if ((scriptfd = fopen("/.mshrc", "r")) != NULL) {
@@ -58,7 +60,8 @@ int shell(FILE *restrict stream_in, int scriptMode) {
         
         char eline[MAXLINELEN];
         expand(line, eline);
-        int nrCommands = parse(eline, comLine);
+        extern int nrCommands;
+        nrCommands = parse(eline, comLine);
         
         /* Custom commands *****/
         if (strcmp(*comLine->argv, "exit") == 0) {
@@ -72,8 +75,6 @@ int shell(FILE *restrict stream_in, int scriptMode) {
             continue;
         } else if (strcmp(*comLine->argv, "set") == 0) {
             /* Set environment variable set env=value */
-            printf("comline: %s \n", *comLine->argv);
-            //printf("vars: %s \n", *++(comLine->argv));
             char *var = strtok(*++(comLine->argv), "=");
             char *value;
             if (var != NULL) {
@@ -93,23 +94,19 @@ int shell(FILE *restrict stream_in, int scriptMode) {
         if (!scriptMode) {
             prompt();
         }
+        nrCommands = 0;
     }
     return 0;
 }
 
 /* Do cammands, return status of last command to exit */
 int doCommands(command comLine[], int nrOfCommands) {
-    /* Add signal handler */
-    if (signal(SIGINT, signal_handler) == SIG_ERR) {
-        perror("Couldn't register signal handler");
-    }
-        
     /* Pipes for communication between forked child processes */
     int prevPipe[2];
     int currPipe[2];
 
     /* Will contain pid for every forked process */
-    int pidArray[nrOfCommands];
+    extern int pidArray[];
 
     /* Fork every command */
     for (int i = 0; i < nrOfCommands; i++) {

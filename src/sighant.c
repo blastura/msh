@@ -5,9 +5,14 @@
 
 /* Signal handler */
 void signal_handler(int signum) {
+    extern int pidArray[];
+    extern int nrCommands;
+    
     if (signum == SIGINT) {
-        // DO what? printf("signal: %d\n", signum);
-        // Close all open processes
+        for (int i = 0; i < nrCommands; i++) {
+            printf("child pid: %d\n", pidArray[i]);
+            kill(pidArray[i], SIGINT);
+        }
     }
 }
 
