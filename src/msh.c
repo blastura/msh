@@ -1,22 +1,33 @@
+/*
+ * Name: Anton Johansson
+ * Mail: dit06ajn@cs.umu.se
+ * Time-stamp: "2009-05-22 22:35:50 anton"
+ */
+
 #include "execute.h"
 #include "parser.h"
 #include "sighant.h"
 
-#include <unistd.h>
-#include <stdio.h>
 #include <errno.h>
+#include <stdio.h>
 #include <stdlib.h>
-
-#include <strings.h>
 #include <string.h> // For Solaris?
-
-#include <unistd.h>
+#include <strings.h>
 #include <sys/wait.h>
+#include <unistd.h>
+#include <unistd.h>
+
+#define OVERWRITE_ENVS 1
 
 int shell(FILE *restrict stream_in, int scriptMode);
 int doCommands(command comLine[], int nrOfCommands);
 
 int main(int argc, char* const argv[]) {
+    /* Loading init file */
+    FILE *scriptfd;
+    if ((scriptfd = fopen("/.mshrc", "r")) != NULL) {
+        shell(scriptfd, 1);
+    }
     if (argc == 1) {
         return shell(stdin, 0);
     } else if (argc == 2) {
@@ -53,17 +64,31 @@ int shell(FILE *restrict stream_in, int scriptMode) {
         if (strcmp(*comLine->argv, "exit") == 0) {
             exit(0);
         } else if (strcmp(*comLine->argv, "cd") == 0) {
-            // TODO: change dir
-            //printf("cd: %s\n", *++comLine->argv);
+            /* cd - change directory */
             if (chdir(*++comLine->argv) < 0) {
                 perror(*comLine->argv);
             }
             prompt();
             continue;
         } else if (strcmp(*comLine->argv, "set") == 0) {
-            // TODO: set var=value
+            /* Set environment variable set env=value */
+            printf("comline: %s \n", *comLine->argv);
+            //printf("vars: %s \n", *++(comLine->argv));
+            char *var = strtok(*++(comLine->argv), "=");
+            char *value;
+            if (var != NULL) {
+                value = strtok(NULL, "=");
+                if (value != NULL) {
+                    setenv(var, value, OVERWRITE_ENVS);
+                } else {
+                    printf("Usage: set var=value\n");
+                }
+            }
+            prompt();
+            continue;
         }
         
+        /* Fork new process and run commands */
         doCommands(comLine, nrCommands);
         if (!scriptMode) {
             prompt();
