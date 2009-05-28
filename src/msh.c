@@ -1,7 +1,7 @@
 /*
  * Name: Anton Johansson
  * Mail: dit06ajn@cs.umu.se
- * Time-stamp: "2009-05-28 11:04:21 anton"
+ * Time-stamp: "2009-05-28 11:30:21 anton"
  */
 
 #include "msh.h"
@@ -49,13 +49,11 @@ int main(int argc, char* const argv[]) {
 int shell(FILE *restrict stream_in, int scriptMode) {
     char line[MAXLINELEN];
     command comLine[MAXCOMMANDS];
-    if (!scriptMode) {
-        prompt();
-    }
+    if (!scriptMode) prompt();
 
     while (fgets(line, MAXLINELEN, stream_in) != NULL) {
         if (line[0] == '\n') {
-            prompt();
+            if (!scriptMode) prompt();
             continue;
         }
 
@@ -75,7 +73,7 @@ int shell(FILE *restrict stream_in, int scriptMode) {
         }
         if (!valid) {
             fprintf(stderr, "Invalid command\n");
-            prompt();
+            if (!scriptMode) prompt();
             continue;
         }
 
@@ -87,7 +85,7 @@ int shell(FILE *restrict stream_in, int scriptMode) {
             if (chdir(*++comLine->argv) < 0) {
                 perror(*comLine->argv);
             }
-            prompt();
+            if (!scriptMode) prompt();
             continue;
         } else if (strcmp(*comLine->argv, "set") == 0) {
             /* Set environment variable set env=value */
@@ -101,14 +99,14 @@ int shell(FILE *restrict stream_in, int scriptMode) {
                     printf("Usage: set var=value\n");
                 }
             }
-            prompt();
+            if (!scriptMode) prompt();
             continue;
         }
 
         /* Fork new process and run commands */
         doCommands(comLine, nrCommands);
         if (!scriptMode) {
-            prompt();
+            if (!scriptMode) prompt();
         }
         nrCommands = 0;
     }
