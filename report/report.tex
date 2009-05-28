@@ -169,6 +169,17 @@ information om denna metod i algoritmbeskrivningen, avsnitt
 skalprogrammet att vänta på att nästa rad finns tillgängligt för
 läsning, det vill säga vid radbrytningar i strömmen som avläses.
 
+\subsection{Interna kommandon}\label{sec:internakommandon}
+Eftersom en process enbart kan ändra sina egna miljövariabler och inte
+andra processers så måste vissa kommandon som bör finnas i ett skal
+implementeras på ett annat sätt än andra vanliga program som
+exekveras. Dessa kommandon i denna laboration är \verb!cd!, som ändrar
+skalets arbetskatalog och kommandot \verb!set var=value!, som sätter
+miljövariabeln \textit{var} till värdet \textit{value}. Dessa
+ändringar görs med funktionerna \textit{chdir()} och
+\textit{setenv()}, skulle dessa metoder köras i en barnprocess skulle
+ändringarna inte gälla för föräldraprocessen som kör skalet.
+
 \section{Algoritmbeskrivning}\label{sec:algoritmbeskrivning}
 Följande avsnitt ger en beskrivning av hur olika dela i systemet
 fungerar.
