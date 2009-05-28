@@ -1,7 +1,7 @@
 /*
  * Name: Anton Johansson
  * Mail: dit06ajn@cs.umu.se
- * Time-stamp: "2009-05-28 11:30:21 anton"
+ * Time-stamp: "2009-05-28 11:42:17 anton"
  */
 
 #include "msh.h"
@@ -12,7 +12,6 @@
 #include <string.h> // For Solaris?
 #include <strings.h>
 #include <sys/wait.h>
-#include <unistd.h>
 #include <unistd.h>
 
 int shell(FILE *restrict stream_in, int scriptMode);
@@ -32,7 +31,7 @@ int main(int argc, char* const argv[]) {
     }
 
     if (argc == 1) {
-        return shell(stdin, 0);
+        return shell(stdin, !isatty(STDIN_FILENO));
     } else if (argc == 2) {
         FILE *scriptfd;
         if ((scriptfd = fopen(argv[1], "r")) == NULL) {
