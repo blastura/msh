@@ -1,7 +1,7 @@
 /*
  * Name: Anton Johansson
  * Mail: dit06ajn@cs.umu.se
- * Time-stamp: "2009-05-28 11:42:17 anton"
+ * Time-stamp: "2009-05-28 11:48:58 anton"
  */
 
 #include "msh.h"
@@ -65,7 +65,7 @@ int shell(FILE *restrict stream_in, int scriptMode) {
         int valid = 1;
         for (int i = 0; i < nrCommands; i++) {
             if ((comLine[i].argc == 0)
-                || ((comLine[i].outfile != NULL) && (i == nrCommands))
+                || ((comLine[i].outfile != NULL) && ((i + 1) < nrCommands))
                 || ((comLine[i].infile != NULL) && (i > 0))) {
                 valid = 0;
             }
