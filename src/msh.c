@@ -1,7 +1,7 @@
 /*
  * Name: Anton Johansson
  * Mail: dit06ajn@cs.umu.se
- * Time-stamp: "2009-05-22 23:20:37 anton"
+ * Time-stamp: "2009-05-28 11:04:21 anton"
  */
 
 #include "msh.h"
@@ -24,12 +24,13 @@ int main(int argc, char* const argv[]) {
         perror("Couldn't register signal handler");
         exit(1);
     }
-    
+
     /* Loading init file */
     FILE *scriptfd;
-    if ((scriptfd = fopen("/.mshrc", "r")) != NULL) {
+    if ((scriptfd = fopen("~/.mshrc", "r")) != NULL) {
         shell(scriptfd, 1);
     }
+
     if (argc == 1) {
         return shell(stdin, 0);
     } else if (argc == 2) {
@@ -57,13 +58,28 @@ int shell(FILE *restrict stream_in, int scriptMode) {
             prompt();
             continue;
         }
-        
+
         char eline[MAXLINELEN];
         expand(line, eline);
         extern int nrCommands;
         nrCommands = parse(eline, comLine);
-        
-        /* Custom commands *****/
+
+        /* Check for valid commands */
+        int valid = 1;
+        for (int i = 0; i < nrCommands; i++) {
+            if ((comLine[i].argc == 0)
+                || ((comLine[i].outfile != NULL) && (i == nrCommands))
+                || ((comLine[i].infile != NULL) && (i > 0))) {
+                valid = 0;
+            }
+        }
+        if (!valid) {
+            fprintf(stderr, "Invalid command\n");
+            prompt();
+            continue;
+        }
+
+        /* Custom commands */
         if (strcmp(*comLine->argv, "exit") == 0) {
             exit(0);
         } else if (strcmp(*comLine->argv, "cd") == 0) {
@@ -88,7 +104,7 @@ int shell(FILE *restrict stream_in, int scriptMode) {
             prompt();
             continue;
         }
-        
+
         /* Fork new process and run commands */
         doCommands(comLine, nrCommands);
         if (!scriptMode) {
@@ -138,7 +154,7 @@ int doCommands(command comLine[], int nrOfCommands) {
             case -1: /* Fork failed */
                 fprintf(stderr, "fork() failed\n");
                 break;
-                
+
             case 0: /* Child */
                     /* Write output to currPipe[WRITE_END], will be
                      * read by next command for every command but the
@@ -156,15 +172,15 @@ int doCommands(command comLine[], int nrOfCommands) {
                         _exit(-1);
                     }
                 }
-                    
+
                 if (cmd.infile != NULL) {
                     redirect(cmd.infile, READ_END, STDIN_FILENO);
                 }
-                    
+
                 if (cmd.outfile != NULL) {
                     redirect(cmd.outfile, WRITE_END, STDOUT_FILENO);
                 }
-                    
+
                 /* Execute command */
                 if (execvp(cmd.argv[0], cmd.argv) < 0 ) {
                     perror(cmd.argv[0]);
